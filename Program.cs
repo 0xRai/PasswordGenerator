@@ -45,6 +45,9 @@ public static class Program {
             "\t-LOWER, -L\t\tLower Case Only [a-z]",
             "\t-NUM, -NO\t\tNumbers Only [0-9]",
             "\t-NONUM, -NN\t\tNo Numbers",
+            "\t-X \t\t\tGenerate passwords 'X' amount of times",
+            "\t\t\t\t (Ex: 8 -NN -X 10)",
+            "\t\t\t\t 'Generate 10, no nums, 8-character passwords'",
         };
         Console.Clear();
         foreach (var help in helper) {
@@ -52,7 +55,7 @@ public static class Program {
         }
     }
 
-    private static void GeneratePassword(int length = 8, string[]? options = null) {
+    private static void GeneratePassword(int length = 8, string[]? options = null, int iterations = 1) {
         int maxCharCode = 127;
         int minCharCode = 33;
         List<string> opList = new List<string>();
@@ -64,9 +67,10 @@ public static class Program {
         -LOWER, -L		Lower Case Only [a-z]
         -NUM, -NO		Numbers Only [0-9]
         -NONUM, -NN		No Numbers
+        -X              Iterations
     */
-            foreach (var option in options) {
-                switch (option.ToUpper()) {
+            for (int i = 0; i < options.Length; i++) {
+                switch (options[i].ToUpper()) {
                     case "-NONE":
                     case "-N":
                         opList.Add("N");
@@ -94,40 +98,72 @@ public static class Program {
                     case "-NN":
                         opList.Add("NN");
                         break;
+                    case "-X":
+                        if (i + 1 < options.Length) {
+                            try {
+                                iterations = Int32.Parse(options[i + 1]);
+                                options[i + 1] = "PASS";
+                            }
+                            catch (FormatException) {
+                                Console.WriteLine($"{options[i]} {options[i + 1]}: Bad Format. Specify a number of iterations.");
+                                for (int j = 0; j <= options[i].Length; j++) {
+                                    Console.Write(" ");
+                                }
+                                for (int j = 0; j <= options[i].Length; j++) {
+                                    Console.Write("^");
+                                }
+                                Console.WriteLine("\n");
+                                throw new ArgumentException("Parameter is not-integer");
+                            }
+                        }
+                        break;
+                    case "PASS":
+                        break;
                     default:
-                        Console.WriteLine($"'{option}' is not a valid option! Type 'HELP' for available options\n");
-                        throw new Exception("Invalid option entered");
+                        Console.WriteLine($"'{options[i]}' is not a valid option! Type 'HELP' for available options\n");
+                        throw new ArgumentException("Invalid option entered");
                 }
             }
         }
         if (opList.Contains("NN") && opList.Contains("NO")) {
             Console.WriteLine("Cannot use 'No Numbers' and 'Numbers Only' options together\n");
-            throw new Exception("Contradicting Options");
+            throw new ArgumentException("Contradicting Options");
         }
         if (opList.Contains("U") && opList.Contains("L")) {
             Console.WriteLine("Cannot use 'Lowercase Only' and 'Uppercase Only' options together\n");
-            throw new Exception("Contradicting Options");
+            throw new ArgumentException("Contradicting Options");
         }
         string password = "";
-        while(password.Length != length) {
+        int x = 0;
+        while (x < iterations) {
+            while (password.Length != length) {
                 Random rand = new Random();
                 password += (char)rand.Next(minCharCode, maxCharCode);
                 if (opList.Contains("N")) {
                     password = Regex.Replace(password, @"[^0-9a-zA-Z]+", "");
-                } if (opList.Contains("B")) {
+                }
+                if (opList.Contains("B")) {
                     password = Regex.Replace(password, @"[^0-9a-zA-Z!@#$%^&*]+", "");
-                } if (opList.Contains("NO")) {
+                }
+                if (opList.Contains("NO")) {
                     password = Regex.Replace(password, @"[^0-9]+", "");
-                } if (opList.Contains("NN")) {
+                }
+                if (opList.Contains("NN")) {
                     password = Regex.Replace(password, @"[^a-zA-Z]+", "");
                 }
+            }
+            if (opList.Contains("U")) {
+                Console.WriteLine(password.ToUpper());
+            }
+            else if (opList.Contains("L")) {
+                Console.WriteLine(password.ToLower());
+            }
+            else {
+                Console.WriteLine(password);
+            }
+            password = "";
+            x++;
         }
-        if (opList.Contains("U")) {
-            Console.WriteLine(password.ToUpper());
-        } else if (opList.Contains("L")) {
-            Console.WriteLine(password.ToLower());
-        } else {
-            Console.WriteLine(password);
-        }
+        
     }
 }
